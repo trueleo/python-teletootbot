@@ -15,7 +15,7 @@ bot_token = ''
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-test_visiblity = 'direct'
+test_visibility = 'public'
 
 group_media_queue = {}
 lookup_dict = {}
@@ -39,7 +39,7 @@ def load_account(chat_id, force_reload=False):
 
 def process_group_media(chat_id, key):
     toot_obj = group_media_queue.pop(key)
-    tooting(chat_id, toot_obj, test_visiblity)
+    tooting(chat_id, toot_obj, test_visibility)
     for media in toot_obj.medias:
         os.remove(media)
 
@@ -56,8 +56,8 @@ def add_to_group_media_queue(chat_id, group_id, media, caption):
         media_container.append(caption, media)
 
 
-def tooting(chat_id, tootobject, visiblity):
-    load_account(chat_id).toot(tootobject, visiblity)
+def tooting(chat_id, tootobject, visibility):
+    load_account(chat_id).toot(tootobject, visibility)
  
 def reply(context, chat_id, text):
     context.bot.send_message(chat_id=chat_id, text=text, parse_mode='markdown')
@@ -175,14 +175,14 @@ def media(update, context):
                            media_name, update.message.caption)
     else:
         try:
-            tooting(chat_id, tootObject(update.message.caption, media_name), test_visiblity)
+            tooting(chat_id, tootObject(update.message.caption, media_name), test_visibility)
         except DataHandler.NoDataError:
             reply(context, chat_id, 'Please add an account first using /add')
 
 def text(update, context):
     chat_id = update.message.chat_id
     try:
-        tooting(chat_id, tootObject(update.message.text), test_visiblity)
+        tooting(chat_id, tootObject(update.message.text), test_visibility)
     except DataHandler.NoDataError:
         reply(context, chat_id, 'Please add an account first using /add')
 

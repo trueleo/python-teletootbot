@@ -52,15 +52,15 @@ class MastodonAccount:
         mastodon.log_in(str(self.user), str(password),
                         to_file='{0}.secret'.format(self.hash_str))
                         
-    def toot(self, tootobject, visiblity):
+    def toot(self, tootobject, visibility):
         mastodon = Mastodon(access_token='{0}.secret'.format(
             self.hash_str), api_base_url=self.instance)
         if (tootobject.medias and tootobject.text) or (tootobject.medias):
             media_listid = [mastodon.media_post(
                 media)['id'] for media in tootobject.medias]
             mastodon.status_post(
-                tootobject.text, media_ids=media_listid, visibility=visiblity)
+                tootobject.text, media_ids=media_listid, visibility=visibility)
         elif tootobject.text:
-            mastodon.status_post(tootobject.text, visibility=visiblity)
+            mastodon.status_post(tootobject.text, visibility=visibility)
         else:
             raise 'Not sufficient argument in toot()'
