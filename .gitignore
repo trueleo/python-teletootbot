@@ -1,3 +1,8 @@
+secretbot
 env/
 __pycache__/
-.vscode/settings.json
+.vscode/
+5ac8b783f6a042da5463bcc80f2ec341d15f9ce0b8634162b0463cee64af2eda.secret a4550b4ba2a10ded04c2ed812ebcc38b86c163a5b064fad994fc8636a057df44.secret teletootbot_fosstodon-org.secret teletootbot_niu-moe.secret
+.secret
+*.secret
+*.db

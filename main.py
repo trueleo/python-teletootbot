@@ -9,8 +9,12 @@ import certifi
 import urllib3
 import re
 
-# contact botfather to get bot token 
-bot_token = ''
+bot_token = '<your bot token here>'
+
+# secretfile = open('secretbot', 'r')
+# secret = secretfile.readline().rstrip('\n')
+#bot_token = secret
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -95,6 +99,7 @@ def add(update, context):
         if isinstance(newAcc, DataHandler.mastodonapi.MastodonAccount) and (DataHandler.number_of_accounts(chat_id) == 1):
             lookup_dict[chat_id] = newAcc
             DataHandler.upsert_user(chat_id, 1)
+        reply(context, chat_id, 'Great!, You can use /listall to list your currently registered accounts')
 
 
 def setdefault(update, context):
@@ -123,6 +128,7 @@ def setdefault(update, context):
 def delete(update, context):
     chat_id = update.message.chat_id
     number_of_accounts = DataHandler.number_of_accounts(chat_id)
+    
     if number_of_accounts == 0:
         reply(context, chat_id,
                   'You don\'t have any registered account(s) to delete')
@@ -132,16 +138,21 @@ def delete(update, context):
     else:
         try:
             acc_num = int(context.args[0])
+            if acc_num > number_of_accounts:
+                reply(context, chat_id, "You need to specify right account number as given in /listall")
+                return
             current_default = DataHandler.get_default_acc(chat_id)
             id_to_delete = DataHandler.account_id(chat_id, acc_num) 
             DataHandler.delete_account(id_to_delete)
             if id_to_delete == current_default:
                 DataHandler.upsert_user(chat_id, 1)
                 load_account(chat_id, force_reload=True)
-        
+                account_info_tuple = DataHandler.account_info(chat_id)
+                reply(context, chat_id, 'Your current default account is now set to {username} @ {instance}'.format(
+                                                                                                    username=account_info_tuple[0],
+                                                                                                    instance=account_info_tuple[1]))
         except:
             reply(context, chat_id, '`usage:`\n`/delete <number>`')
-
 
 def deleteall(update, context):
     chat_id = update.message.chat_id
