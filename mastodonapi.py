@@ -34,7 +34,7 @@ class MastodonAccount:
             self.hash_str = self.get_hash(password)
             self.auth(password)
         else:
-            pass
+            raise TypeError
 
     @staticmethod
     def get_instance_name(instance):
@@ -55,12 +55,10 @@ class MastodonAccount:
     def toot(self, tootobject, visibility):
         mastodon = Mastodon(access_token='{0}.secret'.format(
             self.hash_str), api_base_url=self.instance)
-        if (tootobject.medias and tootobject.text) or (tootobject.medias):
+        if tootobject.medias:
             media_listid = [mastodon.media_post(
                 media)['id'] for media in tootobject.medias]
             mastodon.status_post(
                 tootobject.text, media_ids=media_listid, visibility=visibility)
-        elif tootobject.text:
+        if tootobject.text:
             mastodon.status_post(tootobject.text, visibility=visibility)
-        else:
-            raise 'Not sufficient argument in toot()'

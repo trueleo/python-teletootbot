@@ -8,24 +8,19 @@ def upsert_user(chat_id, default_acc):
         data = dict(chat_id=chat_id, default_acc=acc_id)
         telegram.upsert(data, ['chat_id'])
     except:
-        pass
-        
-def delete_user(chat_id):
-    try:
-        telegram.delete(chat_id=chat_id)
-        secretfiles = [od['hash_str'] for od in accounts.find(chat_id=chat_id)]
-        for i in secretfiles:
-            os.remove(i+'.secret')
-        accounts.delete(chat_id=chat_id)
-    except:
-        pass
+        raise InsertError
 
+def delete_user(chat_id):
+    telegram.delete(chat_id=chat_id)
+    secretfiles = [od['hash_str'] for od in accounts.find(chat_id=chat_id)]
+    for i in secretfiles:
+        os.remove(i+'.secret')
+    accounts.delete(chat_id=chat_id)
 
 def insert_account(chat_id, username, instance, password):
     if not accounts.find_one(user=username, instance=instance):
         tootAcc = mastodonapi.MastodonAccount(username, instance, password=password)
-        accounts.insert(dict(user=tootAcc.user, instance=tootAcc.instance,
-                             hash_str=tootAcc.hash_str, chat_id=chat_id))
+        accounts.insert(dict(user=tootAcc.user, instance=tootAcc.instance, hash_str=tootAcc.hash_str, chat_id=chat_id))
         return tootAcc
     else:
         raise InsertError
@@ -46,7 +41,6 @@ def account_id(chat_id, index):
         return iterobj.__next__()['id']
     except StopIteration:
         raise NoDataError
-
 
 def account_info(chat_id):
         teleuser = telegram.find_one(chat_id=chat_id)

@@ -13,7 +13,7 @@ bot_token = '<your bot token here>'
 
 # secretfile = open('secretbot', 'r')
 # secret = secretfile.readline().rstrip('\n')
-#bot_token = secret
+# bot_token = secret
 
 
 logging.basicConfig(
@@ -41,23 +41,37 @@ def load_account(chat_id, force_reload=False):
         lookup_dict[chat_id] = account
         return account
 
+def download(file_id, telegram_file_object):
+    file_url = telegram_file_object.file_path
+    file_ext = re.search(r'\.[0-9a-z]+$', file_url).group()
+    media_name = 'media-' + str(file_id) + file_ext
+    telegram_file_object.download(media_name)
+    return media_name
+
 def process_group_media(chat_id, key):
-    toot_obj = group_media_queue.pop(key)
-    tooting(chat_id, toot_obj, test_visibility)
-    for media in toot_obj.medias:
+    files = group_media_queue[key]
+    toot_object = tootObject()
+    for file_tuple in files:
+        file_id = file_tuple[0]
+        telegram_file_object = file_tuple[1]
+        caption = file_tuple[2]
+        media_name = download(file_id, telegram_file_object)
+        toot_object.append(text=caption, media=media_name)
+    tooting(chat_id, toot_object, test_visibility)
+    for media in toot_object.medias:
         os.remove(media)
 
 
-def add_to_group_media_queue(chat_id, group_id, media, caption):
+def add_to_group_media_queue(chat_id, group_id, file_id, telegram_file_object, caption):
     key = str(chat_id) + str(group_id)
     try:
         media_container = group_media_queue[key]
     except KeyError:
-        threading.Timer(30, process_group_media, [chat_id, key]).start()
-        media_container = tootObject()
+        threading.Timer(20, process_group_media, [chat_id, key]).start()
+        media_container = []
         group_media_queue[key] = media_container
     finally:
-        media_container.append(caption, media)
+        media_container.append( (file_id, telegram_file_object, caption) )
 
 
 def tooting(chat_id, tootobject, visibility):
@@ -82,10 +96,11 @@ def add(update, context):
         instance = geturl(context.args[2])
         password = context.args[1]
     try:
-        newAcc = DataHandler.insert_account( chat_id,
+        new_account = DataHandler.insert_account( chat_id,
                                              username,
                                              instance, 
                                              password)
+        reply(context, chat_id, 'Account added successfully')
     except MastodonIllegalArgumentError:
         reply(context, chat_id, 'Authentication failed')
         reply(context, chat_id, 'usage:`\n/add <user_email> <password> <full_instance_url>`\nexample: `\add john@doe.com cyberpunk277 https://mastodon.social/`')
@@ -96,8 +111,8 @@ def add(update, context):
     except:
         reply(context, chat_id, 'Oops!, Something gone wrong. Check and try again')
     else:
-        if isinstance(newAcc, DataHandler.mastodonapi.MastodonAccount) and (DataHandler.number_of_accounts(chat_id) == 1):
-            lookup_dict[chat_id] = newAcc
+        if isinstance(new_account, DataHandler.mastodonapi.MastodonAccount) and (DataHandler.number_of_accounts(chat_id) == 1):
+            lookup_dict[chat_id] = new_account
             DataHandler.upsert_user(chat_id, 1)
         reply(context, chat_id, 'Great!, You can use /listall to list your currently registered accounts')
 
@@ -105,6 +120,9 @@ def add(update, context):
 def setdefault(update, context):
     chat_id = update.message.chat_id
     number_of_accounts = DataHandler.number_of_accounts(chat_id)
+    if number_of_accounts == 0:
+        reply(context, chat_id, 'You have not registered any mastodon account yet')
+        return
     if number_of_accounts == 1:
         acc = DataHandler.account_info(chat_id)
         reply(context, chat_id, "Your only registered account is `{}` at `{}`".format(acc[0], acc[1]))
@@ -176,16 +194,13 @@ def listall(update, context):
 def media(update, context):
     chat_id = update.message.chat_id
     file_id = update.message.photo[-1].file_id
-    newFile = context.bot.get_file(file_id)
-    file_url = newFile.file_path
-    file_ext = re.search(r'\.[0-9a-z]+$', file_url).group()
-    media_name = 'media-' + str(file_id) + file_ext
-    newFile.download(media_name)
+    new_file = context.bot.get_file(file_id)
     if update.message.media_group_id:
         add_to_group_media_queue(chat_id, update.message.media_group_id,
-                           media_name, update.message.caption)
+                           file_id, new_file, update.message.caption)
     else:
         try:
+            media_name = download(file_id, new_file)
             tooting(chat_id, tootObject(update.message.caption, media_name), test_visibility)
         except DataHandler.NoDataError:
             reply(context, chat_id, 'Please add an account first using /add')
