@@ -49,7 +49,7 @@ def download(file_id, telegram_file_object):
     return media_name
 
 def process_group_media(chat_id, key):
-    files = group_media_queue[key]
+    files = group_media_queue.pop(key)
     toot_object = tootObject()
     for file_tuple in files:
         file_id = file_tuple[0]
