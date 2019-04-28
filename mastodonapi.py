@@ -41,6 +41,8 @@ class MastodonAccount:
         return '-'.join(re.search(r'([a-z]*)\.([a-z]*)\/', instance, re.I).groups())
 
     def get_hash(self, password):
+        ''' One Simply Aint Gonna Trust this 
+         Don't worry because I'm gonna rewrite this part anyways '''
         return hashlib.sha256(self.user.encode() + self.instance.encode() + password.encode()).hexdigest()
 
     def auth(self, password):
